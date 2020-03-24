@@ -8,12 +8,12 @@ Usage example::
     >>> from GL import *
 
 '''
-from __future__ import print_function
+
 
 __docformat__ = 'restructuredtext'
 __version__ = '$Id$'
 
-from ctypesparser import *
+from .ctypesparser import *
 import textwrap
 import sys
 

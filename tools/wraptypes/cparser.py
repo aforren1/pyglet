@@ -13,12 +13,12 @@ Reference is C99:
   * http://www.open-std.org/JTC1/SC22/WG14/www/docs/n1124.pdf
 
 '''
-from __future__ import print_function
+
 
 __docformat__ = 'restructuredtext'
 __version__ = '$Id$'
 
-import cPickle
+import pickle
 import operator
 import os.path
 import re
@@ -26,8 +26,8 @@ import sys
 import time
 import warnings
 
-import preprocessor
-import yacc
+from . import preprocessor
+from . import yacc
 
 tokens = (
 
@@ -77,7 +77,7 @@ class Declaration(object):
         }
         if self.storage:
             d['storage'] = self.storage
-        l = ['%s=%r' % (k, v) for k, v in d.items()]
+        l = ['%s=%r' % (k, v) for k, v in list(d.items())]
         return 'Declaration(%s)' % ', '.join(l)
 
 class Declarator(object):
@@ -143,7 +143,7 @@ class Parameter(object):
             d['declarator'] = self.declarator
         if self.storage:
             d['storage'] = self.storage
-        l = ['%s=%r' % (k, v) for k, v in d.items()]
+        l = ['%s=%r' % (k, v) for k, v in list(d.items())]
         return 'Parameter(%s)' % ', '.join(l)
 
 
@@ -211,7 +211,7 @@ def apply_specifiers(specifiers, declaration):
     '''Apply specifiers to the declaration (declaration may be
     a Parameter instead).'''
     for s in specifiers:
-        if type(s) == StorageClassSpecifier:
+        if isinstance(s, StorageClassSpecifier):
             if declaration.storage:
                 p.parser.cparser.handle_error(
                     'Declaration has more than one storage class', 
@@ -220,7 +220,7 @@ def apply_specifiers(specifiers, declaration):
             declaration.storage = s
         elif type(s) in (TypeSpecifier, StructTypeSpecifier, EnumSpecifier):
             declaration.type.specifiers.append(s)
-        elif type(s) == TypeQualifier:
+        elif isinstance(s, TypeQualifier):
             declaration.type.qualifiers.append(s)
 
 
@@ -458,7 +458,7 @@ def p_unary_expression(p):
             p[0] = SizeOfExpressionNode(p[3])
         else:
             p[0] = SizeOfExpressionNode(p[2])
-    elif type(p[1]) == tuple:
+    elif isinstance(p[1], tuple):
         # unary_operator reduces to (op, op_str)
         p[0] = UnaryExpressionNode(p[1][0], p[1][1], p[2])
     else:
@@ -923,7 +923,7 @@ def p_pointer(p):
     if len(p) == 2:
         p[0] = Pointer()
     elif len(p) == 3:
-        if type(p[2]) == Pointer:
+        if isinstance(p[2], Pointer):
             p[0] = Pointer()
             p[0].pointer = p[2]
         else:
@@ -997,12 +997,12 @@ def p_abstract_declarator(p):
     '''
     if len(p) == 2:
         p[0] = p[1]
-        if type(p[0]) == Pointer:
+        if isinstance(p[0], Pointer):
             ptr = p[0]
             while ptr.pointer:
                 ptr = ptr.pointer
             # Only if doesn't already terminate in a declarator
-            if type(ptr) == Pointer:
+            if isinstance(ptr, Pointer):
                 ptr.pointer = Declarator()
     else:
         p[0] = p[1]
@@ -1269,9 +1269,9 @@ class CParser(object):
         if not filename:
             filename = '.header.cache'
         try:
-            self.header_cache = cPickle.load(open(filename, 'rb'))
+            self.header_cache = pickle.load(open(filename, 'rb'))
             self.handle_status('Loaded header cache "%s".  Found:' % filename)
-            for header in self.header_cache.keys():
+            for header in list(self.header_cache.keys()):
                 self.handle_status('  %s' % header)
         except:
             self.handle_status('Failed to load header cache "%s"' % filename)
@@ -1280,7 +1280,7 @@ class CParser(object):
         if not filename:
             filename = '.header.cache'
         try:
-            cPickle.dump(self.header_cache, open(filename, 'wb'))
+            pickle.dump(self.header_cache, open(filename, 'wb'))
             self.handle_status('Updated header cache "%s"' % filename)
         except:
             self.handle_status('Failed to update header cache "%s"' % filename)

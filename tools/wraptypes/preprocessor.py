@@ -13,20 +13,20 @@ Reference is C99:
   * Also understands GNU #include_next
 
 '''
-from __future__ import print_function
+
 
 __docformat__ = 'restructuredtext'
 __version__ = '$Id$'
 
 import operator
 import os.path
-import cPickle
+import pickle
 import re
 import sys
 
-import lex
-from lex import TOKEN
-import yacc
+from . import lex
+from .lex import TOKEN
+from . import yacc
 
 tokens = (
     'HEADER_NAME', 'IDENTIFIER', 'PP_NUMBER', 'CHARACTER_CONSTANT',
@@ -145,7 +145,7 @@ punctuators = {
 }
 
 def punctuator_regex(punctuators):
-    punctuator_regexes = [v[0] for v in punctuators.values()]
+    punctuator_regexes = [v[0] for v in list(punctuators.values())]
     punctuator_regexes.sort(key=len, reverse=True)
     return '(%s)' % '|'.join(punctuator_regexes)
 
@@ -855,7 +855,7 @@ class ConstantExpressionGrammar(Grammar):
         '''
         if len(p) == 2:
             p[0] = p[1]
-        elif type(p[1]) == tuple:
+        elif isinstance(p[1], tuple):
             # unary_operator reduces to (op, op_str)
             p[0] = UnaryExpressionNode(p[1][0], p[1][1], p[2])
         else:
@@ -1115,7 +1115,7 @@ class PreprocessorParser(yacc.Parser):
         self.output = []
         if not namespace:
             namespace = self.namespace
-        for name, value in self.defines.items():
+        for name, value in list(self.defines.items()):
             namespace.define_object(name, (create_token('IDENTIFIER', value),))
         self.namespace = namespace
         self.imported_headers = set()
@@ -1463,7 +1463,7 @@ class PreprocessorNamespace(EvaluationContext):
                 if token.value != replacing and r:
                     newr = []
                     for t in r:
-                        if type(t) == int:
+                        if isinstance(t, int):
                             newr += params[t]
                         else:
                             newr.append(t)

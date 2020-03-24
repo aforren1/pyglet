@@ -6,7 +6,7 @@
 __docformat__ = 'restructuredtext'
 __version__ = '$Id$'
 
-from cparser import *
+from .cparser import *
 
 ctypes_type_map = {
      # typename signed  longs
@@ -68,9 +68,9 @@ def get_ctypes_type(typ, declarator):
             t = CtypesArray(t, a.size)
             a = a.array
 
-        if type(t) == CtypesType and t.name == 'c_char':
+        if isinstance(t, CtypesType) and t.name == 'c_char':
             t = CtypesType('c_char_p')
-        elif type(t) == CtypesType and t.name == 'c_wchar':
+        elif isinstance(t, CtypesType) and t.name == 'c_wchar':
             t = CtypesType('c_wchar_p')
         else:
             t = CtypesPointer(t, declarator.qualifiers)
@@ -87,9 +87,9 @@ def get_ctypes_type(typ, declarator):
 # Remove one level of indirection from funtion pointer; needed for typedefs
 # and function parameters.
 def remove_function_pointer(t):
-    if type(t) == CtypesPointer and type(t.destination) == CtypesFunction:
+    if isinstance(t, CtypesPointer) and isinstance(t.destination, CtypesFunction):
         return t.destination
-    elif type(t) == CtypesPointer:
+    elif isinstance(t, CtypesPointer):
         t.destination = remove_function_pointer(t.destination)
         return t
     else:
@@ -150,7 +150,7 @@ class CtypesArray(CtypesType):
     def __str__(self):
         if self.count is None:
             return 'POINTER(%s)' % str(self.base)
-        if type(self.base) == CtypesArray:
+        if isinstance(self.base, CtypesArray):
             return '(%s) * %s' % (str(self.base), str(self.count))
         else:
             return '%s * %s' % (str(self.base), str(self.count))
@@ -168,8 +168,8 @@ class CtypesFunction(CtypesType):
         # when ctypes automagically returns it as an int.
         # Instead, convert to POINTER(c_void).  c_void is not a ctypes type,
         # you can make it any arbitrary type.
-        if type(self.restype) == CtypesPointer and \
-           type(self.restype.destination) == CtypesType and \
+        if isinstance(self.restype, CtypesPointer) and \
+           isinstance(self.restype.destination, CtypesType) and \
            self.restype.destination.name == 'None':
             self.restype = CtypesPointer(CtypesType('c_void'), ())
 
@@ -299,7 +299,7 @@ class CtypesParser(CParser):
         if declaration.storage == 'typedef':
             self.handle_ctypes_type_definition(
                 name, remove_function_pointer(t), filename, lineno)
-        elif type(t) == CtypesFunction:
+        elif isinstance(t, CtypesFunction):
             self.handle_ctypes_function(
                 name, t.restype, t.argtypes, filename, lineno)
         elif declaration.storage != 'static':
